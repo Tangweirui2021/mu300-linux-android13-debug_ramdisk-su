@@ -28,6 +28,9 @@ import tarfile
 import tempfile
 from pathlib import Path
 
+# The installer discovers root before starting this child process. Keep plain su as the standalone default.
+SU = os.environ.get('MU300_SU') or 'su'
+
 # what to ask the device for (dereferencing symlinks), and what to keep of it
 PULL = [
     '/apex/com.android.runtime', '/system/lib64', '/vendor/bin/modem_control', '/vendor/bin/cp_diskserver',
@@ -162,20 +165,23 @@ def make_writable(tree):
                 pass
 
 
+def pull_vendor_archive(blob):
+    # Pull a file rather than streaming a binary through su's potentially CRLF-rewriting pty (issue #2).
+    devtar = '/data/local/tmp/mu300-subset.tar'
+    subprocess.run(['adb', 'shell', f"{SU} -c 'tar -chf {devtar} " + ' '.join(PULL) + " 2>/dev/null'"],
+                   stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+    result = subprocess.run(['adb', 'pull', devtar, str(blob)],
+                            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(['adb', 'shell', f"{SU} -c 'rm -f {devtar}'"],
+                   stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+    return result
+
+
 def main():
     out = Path(sys.argv[1] if len(sys.argv) > 1 else 'android-subset').resolve()
     with tempfile.TemporaryDirectory() as tmp:
         blob = Path(tmp) / 'vendor.tar'
-        # Build the tar on the device and pull it as a file. Streaming it through `adb exec-out "su -c ..."`
-        # is what the comment here used to claim was binary-clean, and on some devices it is not: su gives
-        # the command a pty whose ONLCR turns every LF into CRLF, and the archive arrives corrupt (issue #2).
-        devtar = '/data/local/tmp/mu300-subset.tar'
-        subprocess.run(['adb', 'shell', f"su -c 'tar -chf {devtar} " + ' '.join(PULL) + " 2>/dev/null'"],
-                       stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
-        p = subprocess.run(['adb', 'pull', devtar, str(blob)],
-                           stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        subprocess.run(['adb', 'shell', f"su -c 'rm -f {devtar}'"],
-                       stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+        p = pull_vendor_archive(blob)
         if p.returncode != 0 or not blob.exists() or blob.stat().st_size < 1_000_000:
             sys.exit('pulling the vendor files failed (is the device in rooted Android?)')
         # Everything is checked before the output directory is touched: a half-done run used to leave an

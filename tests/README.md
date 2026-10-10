@@ -4,6 +4,8 @@
 python3 -m unittest discover -s tests            # everything this machine can run
 MU300_TEST_SHELLS="busybox sh" python3 -m unittest discover -s tests   # one shell only
 powershell -File tests\installer.Tests.ps1        # Windows: install.ps1's functions
+powershell -File tests\su-fallback.Tests.ps1      # local variants: root readiness, paths, source update, SHA256
+powershell -File tests\parse-check-su-fallback.ps1 # variants and shared helper parse under PowerShell
 ```
 
 Standard library only (`lz4`, the command or `pip install lz4`, for the boot image tests). CI runs them on Ubuntu,
@@ -42,6 +44,9 @@ macOS and Windows (`.github/workflows/tests.yml`).
 | `test_early_replay_hook.py` | the early hook that replays the LuCI plugin's saved locks before the radio comes on (K65): its place in `mobile-data` |
 | `test_unisoc_plugin.py` | the plugin's portable adapter boundary (K81): the custom AT backend contract, `--available` sends nothing, `boot-replay` (zero AT traffic when disabled, late replay, the early window), `lock replay early` restores every saved lock without `SFUN` |
 | `installer.Tests.ps1` | `install.ps1`: `T` with every translation, `NormalizeAnswer`, `Gib` |
+| `su-fallback.Tests.ps1` | local Windows variants under mocked adb: late Android/root, all supported su paths, rejected non-root/noisy/error output, timeout, command forwarding and disabled source updates; SHA256 without Get-FileHash, known text/binary vectors, literal relative paths, released file handles and missing files |
+| `test_su_fallback.py` | the shell helper under mocked adb, plus all eight variants' readiness gates and disabled source updates; optional `MU300_SU_TEST_ADB_SERIAL` runs only the in-memory mock harness via Android sh without writing device files |
+| `test_vendor_su.py` | vendor/GPU child extractors use the inherited `MU300_SU` path for archive creation, metadata queries, binary pulls and cleanup; mocked adb keeps binary data unchanged |
 
 The device scripts run under dash (Ubuntu's `/bin/sh`), bash and busybox ash (OpenWrt); every shell test runs under
 each of them that is installed. Commands that touch the device (`nft`, `ip`, `id`, `sing-box`) are stubs, and the

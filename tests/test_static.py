@@ -30,6 +30,7 @@ def shell_scripts():
         TOP / 'install.sh', TOP / 'uninstall.sh', TOP / 'boot' / 'init', TOP / 'rootfs' / 'assemble.sh',
         TOP / 'kernel' / 'build-all.sh', TOP / 'tools' / 'i18n.sh', TOP / 'tools' / 'self-update.sh',
         TOP / 'tools' / 'linux-mode.sh', TOP / 'tools' / 'storage.sh', TOP / 'android-vendor' / 'ueventd-perms.sh']
+    cands += list(TOP.glob('*-su-fallback.sh'))
     cands += list((TOP / 'android' / 'magisk' / 'installer').glob('*.sh'))
     cands += [TOP / 'android' / 'magisk' / 'installer' / 'update-binary']
     cands += list((TOP / 'android' / 'magisk' / 'mu300-linux-switch').glob('*.sh'))
@@ -128,7 +129,8 @@ class Rules(unittest.TestCase):
         # Windows PowerShell 5.1 drops the double quotes inside an argument to a native program: `tr -d "\000"`
         # reached the device as tr -d \000 ("delete the character 0"), and every empty region was "not empty".
         # A command for the device (SuDo, adb shell) may therefore contain no `" and no "".
-        for name in ('install.ps1', 'uninstall.ps1'):
+        for name in ('install.ps1', 'uninstall.ps1', 'install-su-fallback.ps1',
+                     'uninstall-su-fallback.ps1', 'tools/su-fallback.ps1'):
             for n, line in enumerate((TOP / name).read_text().splitlines(), 1):
                 code = line.split('#', 1)[0] if not line.lstrip().startswith('#') else ''
                 if re.search(r'\bSuDo(ToFile)?\s+"|adb shell\s+"', code) and ('`"' in code or '""' in code):
@@ -143,7 +145,8 @@ class Rules(unittest.TestCase):
 
     def test_powershell_scripts_are_ascii(self):
         # Windows PowerShell 5.1 reads a file without a BOM as ANSI: non-ASCII text in the script is garbled
-        for name in ('install.ps1', 'uninstall.ps1'):
+        for name in ('install.ps1', 'uninstall.ps1', 'install-su-fallback.ps1',
+                     'uninstall-su-fallback.ps1', 'tools/su-fallback.ps1'):
             data = (TOP / name).read_bytes()
             bad = [i for i, b in enumerate(data) if b > 127]
             self.assertFalse(bad, f'{name}: non-ASCII byte at offset {bad[:1]}')

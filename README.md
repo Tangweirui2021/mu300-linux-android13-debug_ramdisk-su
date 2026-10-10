@@ -1,5 +1,7 @@
 # Linux on the ZTE F50 / MU300 and U30 Air
 
+> **F50 / Android 13 兼容分支：** Root 位于 `/debug_ramdisk/su` 的设备，Windows 请使用 `install-su-fallback.cmd`，macOS/Linux 请使用 `sh install-su-fallback.sh`。适配内容、维护工具和启动条件见 [F50 使用说明](docs/f50-notes.md)。
+
 [![Latest Release](https://img.shields.io/github/v/release/dikeckaan/mu300-linux?logo=github)](https://github.com/dikeckaan/mu300-linux/releases/latest)
 [![Total Downloads](https://img.shields.io/github/downloads/dikeckaan/mu300-linux/total?color=blue&logo=github)](https://github.com/dikeckaan/mu300-linux/releases)
 [![Stars](https://img.shields.io/github/stars/dikeckaan/mu300-linux?logo=github)](https://github.com/dikeckaan/mu300-linux/stargazers)
